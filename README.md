@@ -2,6 +2,10 @@
 
 *Memory Consolidation and Hypothetical Scenario Exploration for AI*
 
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/alanh90/BICA-ArtificialDreams)
+![GitHub last commit](https://img.shields.io/github/last-commit/alanh90/BICA-ArtificialDreams)
+![GitHub License](https://img.shields.io/github/license/alanh90/BICA-ArtificialDreams)
+
 <div align="center"><img src="media/artificialdreams.png" alt="Artificial Dreams Concept"></div>
 
 ## Abstract
