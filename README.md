@@ -2,7 +2,7 @@
 
 *Memory Consolidation and Hypothetical Scenario Exploration for AI*
 
-<div align="center"><img src="media/artificial_dreams.png" alt="Artificial Dreams Concept" width="400"></div>
+<div align="center"><img src="media/artificialdreams.png" alt="Artificial Dreams Concept"></div>
 
 ## Abstract
 
