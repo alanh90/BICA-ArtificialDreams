@@ -1,6 +1,6 @@
 # Artificial Dreams Module
 
-*Memory Consolidation and Hypothetical Scenario Exploration for AI*
+*A potential integral component of the Bicameral AGI Project: Memory Consolidation and Hypothetical Scenario Exploration for AI*
 
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/alanh90/BICA-ArtificialDreams)
 ![GitHub last commit](https://img.shields.io/github/last-commit/alanh90/BICA-ArtificialDreams)
