@@ -18,7 +18,7 @@ Current AI systems, especially those dealing with continuous learning, face chal
 
 *   **Memory Consolidation:** Efficiently storing and summarizing less important memories, reducing redundancy.
 *   **Hypothetical Scenario Exploration:** Exploring potential future outcomes and complex scenarios that require extensive computation.
-*   **Enhanced Problem-Solving:** Aiding in the discovery of novel solutions by exploring hypothetical scenarios.
+*   **Deeper Problem-Solving:** Aiding in the discovery of novel solutions by exploring hypothetical scenarios during the dream state.
 
 ## 2. Theoretical Foundations
 
@@ -33,19 +33,19 @@ The Artificial Dreams module is based on the following principles:
 
 The module operates as follows:
 
-1.  **Memory Importance Assessment:** Each memory is assigned an importance score.
+1.  **Memory Importance Assessment:** Each memory is assigned an importance score if one isn't available.
 2.  **Memory Consolidation:** Memories with low importance scores are consolidated. This can involve:
     *   **Averaging:** For similar memories (e.g., repeated observations), average their representations.
     *   **Summarization:** For more complex memories (e.g., sequences of events), create a summary representation.
     *   **Frequency Encoding:** Instead of storing each instance of a repeated event, store the frequency of the event.
-3.  **Dream Trigger:** The "dreaming" process is triggered periodically or during periods of low activity.
+3.  **Dream Trigger:** The "dreaming" process is triggered periodically or during periods of low activity. It potentially could also be triggered if the AI detects potential problems not consolidating.
 4.  **Hypothetical Scenario Generation:** The module generates hypothetical scenarios based on:
     *   Consolidated memories.
     *   High-importance memories.
     *   Current goals.
     *   External context (if available).
-5.  **Scenario Evaluation (Optional):** The generated scenarios can be evaluated using existing AI models or heuristics.
-6.  **Memory Update:** The results of scenario exploration can be used to update existing memories or create new ones.
+5.  **Scenario Evaluation (Optional):** The generated scenarios can be evaluated using existing AI models or heuristics. The purpose would be to see which scenarios provide a potential benefit in memory, future actions, or if it resolves some future conflict that was foreshadowed. 
+6.  **Memory Update:** The results of scenario exploration can be used to update existing memories or create new ones. 
 
 ## 4. Example Scenario
 
@@ -58,7 +58,7 @@ Imagine an AI tasked with navigating a virtual environment.
 
 ## 5. Integration with Other Architectures
 
-The Artificial Dreams module is designed to be integrated with various AI architectures, including reinforcement learning agents, planning systems, and LLMs. It can enhance memory management and improve problem-solving capabilities in these systems. It works especially well with the Artificial Meaning of Life Module.
+The Artificial Dreams module is designed to be integrated with various AI architectures, including reinforcement learning agents, planning systems, and LLMs. It can enhance memory management and improve problem-solving capabilities in these systems.
 
 ## 6. Future Directions
 
