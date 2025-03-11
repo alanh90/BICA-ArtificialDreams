@@ -1,6 +1,5 @@
 import time
 import random
-import numpy as np
 from datetime import datetime
 
 # Try to import embedding dependencies with better error handling

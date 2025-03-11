@@ -82,6 +82,7 @@ class DreamSystem:
         Returns:
             dict: Summary of dream cycle
         """
+        print("Dream cycle manually triggered")
         return self._dream_cycle()
 
     def _dream_cycle(self):
@@ -100,6 +101,7 @@ class DreamSystem:
             return {"status": "already_dreaming", "message": "Dream cycle already in progress"}
 
         try:
+            print("Starting dream cycle")
             self.dreaming = True
             cycle_start_time = time.time()
             self.current_dream = {
@@ -114,6 +116,7 @@ class DreamSystem:
 
             # Stage 1: Memory Importance Assessment & Consolidation
             self._update_dream_stage("memory-selection")
+            print("Memory selection stage started")
             time.sleep(5)  # Simulate processing time for UI visualization
 
             # Get memories below the consolidation threshold
@@ -139,6 +142,7 @@ class DreamSystem:
 
             if memories_to_consolidate:
                 self._update_dream_stage("consolidation")
+                print("Consolidation stage started")
                 time.sleep(5)  # Simulate processing time for UI visualization
 
                 consolidated = self._consolidate_memories(memories_to_consolidate)
@@ -152,6 +156,7 @@ class DreamSystem:
 
             # Stage 2: Hypothetical Scenario Generation
             self._update_dream_stage("hypothesis")
+            print("Hypothesis generation stage started")
             time.sleep(5)  # Simulate processing time for UI visualization
 
             scenarios = self._generate_scenarios()
@@ -160,6 +165,7 @@ class DreamSystem:
             # Stage 3: Insight Generation
             if scenarios:
                 self._update_dream_stage("insight")
+                print("Insight formation stage started")
                 time.sleep(5)  # Simulate processing time for UI visualization
 
                 insights = self._generate_insights(scenarios)
@@ -178,6 +184,7 @@ class DreamSystem:
             cycle_duration = time.time() - cycle_start_time
             self.current_dream["duration"] = cycle_duration
             self.dream_records.append(self.current_dream)
+            print(f"Dream cycle completed in {cycle_duration:.2f} seconds")
 
             # Keep only recent dream records in memory
             if len(self.dream_records) > 10:
@@ -204,6 +211,7 @@ class DreamSystem:
 
     def _update_dream_stage(self, stage_description):
         """Update the current stage of dreaming"""
+        print(f"Updating dream stage to: {stage_description}")
         self.current_stage = stage_description
 
         if self.current_dream:
@@ -224,7 +232,7 @@ class DreamSystem:
         consolidations = []
 
         # Group memories by similarity
-        # Group memories that have similarTo metadata
+        # First, group memories that have the same similar_to metadata value
         grouped_memories = {}
         standalone_memories = []
 
@@ -233,15 +241,15 @@ class DreamSystem:
             similar_to = metadata.get("similar_to")
 
             if similar_to:
-                # Create a key based on the similar_to content
-                key = similar_to
-                if key not in grouped_memories:
-                    grouped_memories[key] = []
-                grouped_memories[key].append(memory)
+                # Create a key based on the similar_to ID
+                if similar_to not in grouped_memories:
+                    grouped_memories[similar_to] = []
+                grouped_memories[similar_to].append(memory)
             else:
-                # Check for similar event types
+                # For memories without similar_to tag, group by event_type
                 if "event_type" in metadata:
-                    key = metadata["event_type"]
+                    event_type = metadata["event_type"]
+                    key = f"type_{event_type}"
                     if key not in grouped_memories:
                         grouped_memories[key] = []
                     grouped_memories[key].append(memory)
@@ -261,20 +269,28 @@ class DreamSystem:
 
                 {chr(10).join(memory_texts)}
 
+                Think about how human memory works: when we experience similar events multiple times, 
+                we often merge them into one generalized memory with key details preserved.
+
                 Return only the consolidated memory text, no explanations.
                 """
 
-                response = self.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You consolidate similar memories into a single memory that captures their essence."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=150,
-                    temperature=0.3
-                )
+                if not self.client:
+                    print("OpenAI client not available, using simple consolidation")
+                    consolidated_text = f"Combined memory from {len(memory_group)} similar events: {memory_group[0]['text']}"
+                else:
+                    print(f"Generating consolidated memory for {len(memory_group)} memories")
+                    response = self.client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You consolidate similar memories into a single memory that captures their essence, similar to how human memory works during sleep."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=150,
+                        temperature=0.3
+                    )
 
-                consolidated_text = response.choices[0].message.content.strip()
+                    consolidated_text = response.choices[0].message.content.strip()
 
                 # Calculate average importance and create the consolidated memory
                 avg_importance = sum(m.get("importance", 0.2) for m in memory_group) / len(memory_group)
@@ -314,6 +330,8 @@ class DreamSystem:
                     "count": len(memory_group)
                 })
 
+                print(f"Successfully consolidated {len(memory_group)} memories")
+
             except Exception as e:
                 print(f"Error consolidating memories: {e}")
 
@@ -341,6 +359,7 @@ class DreamSystem:
 
         # If we have context memories, generate scenarios
         if not context_memories:
+            print("No context memories found for scenario generation")
             return scenarios
 
         try:
@@ -362,42 +381,56 @@ class DreamSystem:
             Return a JSON array of scenario objects.
             """
 
-            response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You generate hypothetical scenarios based on provided memories."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=500,
-                temperature=0.7
-            )
-
-            # Extract JSON from response
-            content = response.choices[0].message.content.strip()
-
-            # Handle various JSON formats that might be returned
-            if "```json" in content:
-                json_str = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                json_str = content.split("```")[1].strip()
+            if not self.client:
+                print("OpenAI client not available, using simple scenarios")
+                # Create a simple scenario as fallback
+                scenarios = [{
+                    "scenario": "What if similar events happen again tomorrow?",
+                    "relevance": "Based on the pattern of repeated events in memories",
+                    "probability": 0.7,
+                    "timestamp": time.time(),
+                    "id": str(time.time()) + "_" + str(random.randint(1000, 9999))
+                }]
             else:
-                json_str = content
+                print("Generating hypothetical scenarios")
+                response = self.client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You generate hypothetical scenarios based on provided memories."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=500,
+                    temperature=0.7
+                )
 
-            generated_scenarios = json.loads(json_str)
+                # Extract JSON from response
+                content = response.choices[0].message.content.strip()
 
-            # Process and enhance each scenario
-            for scenario in generated_scenarios:
-                # Add timestamp and ID
-                scenario["timestamp"] = time.time()
-                scenario["id"] = str(time.time()) + "_" + str(random.randint(1000, 9999))
-                scenarios.append(scenario)
+                # Handle various JSON formats that might be returned
+                if "```json" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                elif "```" in content:
+                    json_str = content.split("```")[1].strip()
+                else:
+                    json_str = content
 
-                # Store the scenario in hypothetical_scenarios
-                self.hypothetical_scenarios.append(scenario)
+                generated_scenarios = json.loads(json_str)
+
+                # Process and enhance each scenario
+                for scenario in generated_scenarios:
+                    # Add timestamp and ID
+                    scenario["timestamp"] = time.time()
+                    scenario["id"] = str(time.time()) + "_" + str(random.randint(1000, 9999))
+                    scenarios.append(scenario)
+
+            # Store the scenarios in hypothetical_scenarios
+            self.hypothetical_scenarios.extend(scenarios)
 
             # Keep only recent scenarios in memory
             if len(self.hypothetical_scenarios) > 15:
                 self.hypothetical_scenarios = self.hypothetical_scenarios[-15:]
+
+            print(f"Generated {len(scenarios)} hypothetical scenarios")
 
         except Exception as e:
             print(f"Error generating scenarios: {e}")
@@ -416,6 +449,7 @@ class DreamSystem:
         insights = []
 
         if not scenarios:
+            print("No scenarios available for insight generation")
             return insights
 
         try:
@@ -438,42 +472,56 @@ class DreamSystem:
             Return a JSON array of insight objects.
             """
 
-            response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You generate valuable insights from hypothetical scenarios."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=350,
-                temperature=0.5
-            )
-
-            # Extract JSON from response
-            content = response.choices[0].message.content.strip()
-
-            # Handle various JSON formats that might be returned
-            if "```json" in content:
-                json_str = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                json_str = content.split("```")[1].strip()
+            if not self.client:
+                print("OpenAI client not available, using simple insight")
+                # Create a simple insight as fallback
+                insights = [{
+                    "text": "Recurring patterns in daily events suggest opportunities for optimization",
+                    "value": 0.75,
+                    "application": "Could be applied to improve daily routines and interactions",
+                    "timestamp": time.time(),
+                    "id": str(time.time()) + "_" + str(random.randint(1000, 9999))
+                }]
             else:
-                json_str = content
+                print("Generating insights from scenarios")
+                response = self.client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You generate valuable insights from hypothetical scenarios."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=350,
+                    temperature=0.5
+                )
 
-            generated_insights = json.loads(json_str)
+                # Extract JSON from response
+                content = response.choices[0].message.content.strip()
 
-            # Process each insight
-            for insight in generated_insights:
-                # Add timestamp and ID
-                insight["timestamp"] = time.time()
-                insight["id"] = str(time.time()) + "_" + str(random.randint(1000, 9999))
-                insights.append(insight)
+                # Handle various JSON formats that might be returned
+                if "```json" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                elif "```" in content:
+                    json_str = content.split("```")[1].strip()
+                else:
+                    json_str = content
 
-                # Store the insight
-                self.dream_insights.append(insight)
+                generated_insights = json.loads(json_str)
+
+                # Process each insight
+                for insight in generated_insights:
+                    # Add timestamp and ID
+                    insight["timestamp"] = time.time()
+                    insight["id"] = str(time.time()) + "_" + str(random.randint(1000, 9999))
+                    insights.append(insight)
+
+            # Store the insights
+            self.dream_insights.extend(insights)
 
             # Keep only recent insights in memory
             if len(self.dream_insights) > 15:
                 self.dream_insights = self.dream_insights[-15:]
+
+            print(f"Generated {len(insights)} insights")
 
         except Exception as e:
             print(f"Error generating insights: {e}")
