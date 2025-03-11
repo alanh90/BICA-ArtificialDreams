@@ -31,49 +31,45 @@ class DreamSystem:
         self.dreaming = False
         self.current_stage = "idle"
 
+        # Optimization parameters
+        self.diminishing_returns_threshold = 0.3  # Threshold for early termination
+        self.early_termination_enabled = True  # Whether to enable early termination
+        self.last_optimization_value = 0  # Track last optimization value
+
         # Background thread control
         self.running = False
+        self.auto_dreaming_enabled = False  # Disable auto-dreaming by default
         self.background_thread = None
         self.last_dream_time = 0
 
     def start(self):
-        """Start the background dreaming thread"""
+        """Start the background monitoring thread"""
         if not self.running:
             self.running = True
             self.background_thread = threading.Thread(target=self._background_process)
             self.background_thread.daemon = True
             self.background_thread.start()
-            print("Dream system started")
+            print("Dream system started (monitoring only)")
 
     def stop(self):
-        """Stop the background dreaming thread"""
+        """Stop the background monitoring thread"""
         self.running = False
         if self.background_thread and self.background_thread.is_alive():
             self.background_thread.join(timeout=2.0)
             print("Dream system stopped")
 
     def _background_process(self):
-        """Background process for triggering dream cycles"""
+        """Background process for monitoring but not automatically triggering dreams"""
         while self.running:
-            current_time = time.time()
-            time_since_last_dream = current_time - self.last_dream_time
+            # This thread now only monitors the system and doesn't auto-trigger dreams
+            # It could still update UI elements or perform other monitoring tasks
 
-            # Check if it's time to dream based on:
-            # 1. Time since last dream
-            # 2. System inactivity
-            # 3. Memory load (too many unprocessed memories)
+            # For example, it could update the count of unprocessed memories for display
+            unprocessed_count = len(self.memory_system.get_unprocessed_memories())
+            if unprocessed_count > 15:
+                print(f"System has {unprocessed_count} unprocessed memories ready for dreaming")
 
-            should_dream = (
-                    time_since_last_dream > self.dream_frequency or
-                    len(self.memory_system.get_unprocessed_memories()) > 15
-            )
-
-            if should_dream:
-                # Trigger a dream cycle
-                self._dream_cycle()
-                self.last_dream_time = current_time
-
-            # Check less frequently if no dream is needed
+            # Sleep for a while before checking again
             time.sleep(5)
 
     def trigger_dream_cycle(self):
@@ -84,6 +80,105 @@ class DreamSystem:
         """
         print("Dream cycle manually triggered")
         return self._dream_cycle()
+
+    def _calculate_optimization_value(self, stage_data):
+        """Calculate a value to determine if dreaming should continue
+
+        Args:
+            stage_data: Data about the current dream stage
+
+        Returns:
+            float: Optimization value between 0-1
+        """
+        # This is a simple optimization function that could be enhanced
+        # It returns higher values when dreaming is still productive
+
+        if not stage_data:
+            return 0.5  # Default middle value if no data
+
+        # Factors to consider:
+        # 1. How many memories were processed in this stage
+        # 2. How significant the results were (quality of consolidations/insights)
+        # 3. How many unprocessed memories remain
+
+        # For consolidation stage:
+        if self.current_stage == "consolidation":
+            if "consolidations" in stage_data:
+                # More consolidations = higher value
+                consolidation_count = len(stage_data["consolidations"])
+                # Diminishing returns: more value for first few consolidations
+                consolidation_factor = min(1.0, consolidation_count / 5.0)
+                return consolidation_factor
+
+        # For hypothesis stage:
+        elif self.current_stage == "hypothesis":
+            if "scenarios" in stage_data:
+                # More varied scenarios = higher value
+                scenario_count = len(stage_data["scenarios"])
+                scenario_factor = min(1.0, scenario_count / 4.0)
+
+                # Consider scenario quality (probability)
+                avg_probability = 0.5
+                if scenario_count > 0:
+                    avg_probability = sum(s.get("probability", 0.5) for s in stage_data["scenarios"]) / scenario_count
+
+                return 0.7 * scenario_factor + 0.3 * avg_probability
+
+        # For insight stage:
+        elif self.current_stage == "insight":
+            if "insights" in stage_data:
+                # More valuable insights = higher value
+                insight_count = len(stage_data["insights"])
+                if insight_count == 0:
+                    return 0.1  # Few insights = low value in continuing
+
+                # Consider insight quality/value
+                avg_value = 0.5
+                if insight_count > 0:
+                    avg_value = sum(i.get("value", 0.5) for i in stage_data["insights"]) / insight_count
+
+                return 0.4 * min(1.0, insight_count / 3.0) + 0.6 * avg_value
+
+        # Memory selection stage - value based on available memories
+        elif self.current_stage == "memory-selection":
+            unprocessed_count = len(self.memory_system.get_unprocessed_memories())
+            # If we have many unprocessed memories, high value in continuing
+            return min(1.0, unprocessed_count / 10.0)
+
+        # Default fallback
+        return 0.5
+
+    def _should_continue_dreaming(self, stage_data):
+        """Determine if dreaming should continue based on optimization
+
+        Args:
+            stage_data: Data about the current dream stage
+
+        Returns:
+            bool: Whether to continue dreaming
+        """
+        if not self.early_termination_enabled:
+            return True  # Always continue if optimization is disabled
+
+        # Calculate current optimization value
+        current_value = self._calculate_optimization_value(stage_data)
+
+        # Marginal benefit is difference from last value
+        marginal_benefit = current_value - self.last_optimization_value
+
+        # Update for next iteration
+        self.last_optimization_value = current_value
+
+        # Low marginal benefit or low absolute value = stop dreaming
+        if marginal_benefit < 0:  # Declining benefit
+            print(f"Stopping dream early: Declining benefit (change: {marginal_benefit:.2f})")
+            return False
+
+        if current_value < self.diminishing_returns_threshold:
+            print(f"Stopping dream early: Low value ({current_value:.2f} < {self.diminishing_returns_threshold})")
+            return False
+
+        return True
 
     def _dream_cycle(self):
         """Run a complete dream cycle
@@ -114,6 +209,9 @@ class DreamSystem:
                 "insights": []
             }
 
+            # Reset optimization tracking
+            self.last_optimization_value = 0
+
             # Stage 1: Memory Importance Assessment & Consolidation
             self._update_dream_stage("memory-selection")
             print("Memory selection stage started")
@@ -140,6 +238,11 @@ class DreamSystem:
 
             memories_to_consolidate = filtered_memories
 
+            # Check optimization after memory selection
+            stage_data = {"memory_count": len(memories_to_consolidate)}
+            if not self._should_continue_dreaming(stage_data):
+                raise Exception("Dream cycle terminated early: Not enough valuable memories to consolidate")
+
             if memories_to_consolidate:
                 self._update_dream_stage("consolidation")
                 print("Consolidation stage started")
@@ -147,6 +250,13 @@ class DreamSystem:
 
                 consolidated = self._consolidate_memories(memories_to_consolidate)
                 self.current_dream["consolidations"] = consolidated
+
+                # Check optimization after consolidation
+                stage_data = {"consolidations": consolidated}
+                if not self._should_continue_dreaming(stage_data):
+                    # End dream early but still save what we've done
+                    print("Dream cycle ending early after consolidation due to optimization")
+                    return self._finalize_dream(cycle_start_time)
             else:
                 self._update_dream_stage("memory-selection")
                 self.current_dream["stages"].append({
@@ -161,6 +271,13 @@ class DreamSystem:
 
             scenarios = self._generate_scenarios()
             self.current_dream["scenarios"] = scenarios
+
+            # Check optimization after scenario generation
+            stage_data = {"scenarios": scenarios}
+            if not self._should_continue_dreaming(stage_data):
+                # End dream early but still save what we've done
+                print("Dream cycle ending early after scenario generation due to optimization")
+                return self._finalize_dream(cycle_start_time)
 
             # Stage 3: Insight Generation
             if scenarios:
@@ -180,34 +297,65 @@ class DreamSystem:
                             metadata={"dream_id": self.current_dream["id"]}
                         )
 
-            # Finalize dream record
-            cycle_duration = time.time() - cycle_start_time
-            self.current_dream["duration"] = cycle_duration
-            self.dream_records.append(self.current_dream)
-            print(f"Dream cycle completed in {cycle_duration:.2f} seconds")
+                # Check optimization after insight generation
+                stage_data = {"insights": insights}
+                if not self._should_continue_dreaming(stage_data):
+                    print("Dream cycle completed all stages but optimization suggests no further benefit")
 
-            # Keep only recent dream records in memory
-            if len(self.dream_records) > 10:
-                self.dream_records = self.dream_records[-10:]
-
-            # Return summary of the dream cycle
-            result = {
-                "dream_id": self.current_dream["id"],
-                "duration": cycle_duration,
-                "memories_consolidated": len(self.current_dream["consolidations"]),
-                "scenarios_explored": len(self.current_dream["scenarios"]),
-                "insights_generated": len(self.current_dream["insights"])
-            }
-
-            return result
+            # Finalize the dream record
+            return self._finalize_dream(cycle_start_time)
 
         except Exception as e:
             print(f"Error in dream cycle: {e}")
+            if self.current_dream:
+                return self._finalize_dream(cycle_start_time, error=str(e))
             return {"status": "error", "message": str(e)}
         finally:
             self._update_dream_stage("idle")
             self.dreaming = False
             self.current_dream = None
+
+    def _finalize_dream(self, start_time, error=None):
+        """Finalize the dream record and return summary
+
+        Args:
+            start_time: When the dream cycle started
+            error: Optional error message
+
+        Returns:
+            dict: Summary of the dream cycle
+        """
+        # Calculate duration
+        cycle_duration = time.time() - start_time
+        self.current_dream["duration"] = cycle_duration
+
+        # Add early termination info if applicable
+        if error:
+            self.current_dream["early_termination"] = True
+            self.current_dream["termination_reason"] = error
+
+        # Save the dream record
+        self.dream_records.append(self.current_dream)
+        print(f"Dream cycle completed in {cycle_duration:.2f} seconds")
+
+        # Keep only recent dream records in memory
+        if len(self.dream_records) > 10:
+            self.dream_records = self.dream_records[-10:]
+
+        # Return summary of the dream cycle
+        result = {
+            "dream_id": self.current_dream["id"],
+            "duration": cycle_duration,
+            "memories_consolidated": len(self.current_dream.get("consolidations", [])),
+            "scenarios_explored": len(self.current_dream.get("scenarios", [])),
+            "insights_generated": len(self.current_dream.get("insights", [])),
+            "early_termination": "early_termination" in self.current_dream
+        }
+
+        if "early_termination" in self.current_dream:
+            result["termination_reason"] = self.current_dream.get("termination_reason", "Optimization-based early termination")
+
+        return result
 
     def _update_dream_stage(self, stage_description):
         """Update the current stage of dreaming"""
