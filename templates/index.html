@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artificial Dreams - Memory Consolidation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo-container">
+                <h1>Artificial Dreams</h1>
+                <div class="subtitle">Memory Consolidation & Hypothetical Exploration</div>
+            </div>
+            <div class="status-container">
+                <div class="status-indicator dream-status">
+                    <div class="status-label">Dream System</div>
+                    <div class="status-value">Idle</div>
+                </div>
+                <button id="trigger-dream-button">Start Dreaming</button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <div class="left-panel">
+                <div class="day-generator">
+                    <div class="day-generator-header">
+                        <h2>Day Generator</h2>
+                        <button id="generate-day-button">Generate New Day</button>
+                    </div>
+                    <div class="day-timeline">
+                        <div class="timeline-hours">
+                            <div class="timeline-hour">06:00</div>
+                            <div class="timeline-hour">09:00</div>
+                            <div class="timeline-hour">12:00</div>
+                            <div class="timeline-hour">15:00</div>
+                            <div class="timeline-hour">18:00</div>
+                            <div class="timeline-hour">21:00</div>
+                        </div>
+                        <div class="timeline-events" id="timeline-events">
+                            <!-- Events will be generated here by JS -->
+                        </div>
+                    </div>
+                    <div class="events-log" id="events-log">
+                        <h3>Generated Events</h3>
+                        <div class="events-container" id="events-container">
+                            <!-- Events will be logged here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="dreams-tab">Dreams</button>
+                    <button class="tab-button" data-tab="memories-tab">Memory Store</button>
+                    <button class="tab-button" data-tab="consolidation-tab">Consolidation</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="dreams-tab" class="tab-pane active">
+                        <div class="dreams-container">
+                            <div class="dream-visualization">
+                                <div class="dream-stage-indicator">
+                                    <div class="stage-label">Dream Stage:</div>
+                                    <div class="dream-stages">
+                                        <div class="dream-stage" data-stage="idle">Idle</div>
+                                        <div class="dream-stage" data-stage="memory-selection">Memory Selection</div>
+                                        <div class="dream-stage" data-stage="consolidation">Consolidation</div>
+                                        <div class="dream-stage" data-stage="hypothesis">Hypothesis Generation</div>
+                                        <div class="dream-stage" data-stage="insight">Insight Formation</div>
+                                    </div>
+                                </div>
+                                <div class="dream-visual-container">
+                                    <canvas id="dream-visualization-canvas"></canvas>
+                                    <div class="dream-narration" id="dream-narration">
+                                        <p class="narration-text">The AI is not currently dreaming.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dream-records-container">
+                                <h3>Dream Records</h3>
+                                <div class="dream-records" id="dream-records">
+                                    <div class="empty-message">No dreams recorded yet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="memories-tab" class="tab-pane">
+                        <div class="memories-container">
+                            <div class="memory-metrics">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="total-memories-count">0</div>
+                                    <div class="metric-label">Total Memories</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="consolidated-memories-count">0</div>
+                                    <div class="metric-label">Consolidated</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-value" id="insights-count">0</div>
+                                    <div class="metric-label">Insights Generated</div>
+                                </div>
+                            </div>
+
+                            <div class="memory-list-container">
+                                <div class="memory-filter">
+                                    <select id="memory-filter">
+                                        <option value="all">All Memories</option>
+                                        <option value="raw">Raw Memories</option>
+                                        <option value="consolidated">Consolidated</option>
+                                        <option value="insight">Insights</option>
+                                    </select>
+                                    <input type="text" id="memory-search" placeholder="Search memories...">
+                                </div>
+                                <div class="memory-list" id="memory-list">
+                                    <!-- Memories will be displayed here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="consolidation-tab" class="tab-pane">
+                        <div class="consolidation-container">
+                            <div class="consolidation-visualization">
+                                <h3>Memory Consolidation Process</h3>
+                                <div class="visualization-container" id="consolidation-visualization">
+                                    <!-- Visualization will be rendered here -->
+                                </div>
+                            </div>
+
+                            <div class="consolidation-records">
+                                <h3>Recent Consolidations</h3>
+                                <div id="consolidation-records">
+                                    <!-- Consolidation records will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="actions">
+                <button id="reset-button">Reset System</button>
+            </div>
+            <div class="info">
+                Artificial Dreams Module - Memory Consolidation & Hypothetical Scenario Exploration
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dark-theme.js') }}"></script>
+</body>
+</html>
